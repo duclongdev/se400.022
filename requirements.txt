@@ -1,0 +1,6 @@
+matplotlib
+streamlit
+pandas
+pymongo
+pymongo[srv]
+streamlit-extras
