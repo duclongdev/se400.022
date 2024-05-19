@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-from streamlit_extras.metric_cards import style_metric_cards
 
 
-st.title("Page anomaly logs/ raw logs")
+st.title("Raw logs page")
+
 default_start_date = datetime.now() - timedelta(days=7)
 default_end_date = datetime.now()
 default_start_time = datetime.now().replace(hour=0, minute=0)
@@ -27,7 +27,7 @@ try:
     print("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
     print(e)
-    
+
 db = client["my_app"]
 collection_anomaly_logs = db["anomaly_logs"]
 
@@ -55,7 +55,7 @@ arr = []
 cursor_anomaly_logs = collection_anomaly_logs.find(query)
 for document in cursor_anomaly_logs:
     arr.append(document)
-    
+
 print(arr)
 
 data = pd.DataFrame(arr, columns=["timestamp", "message"])
@@ -64,4 +64,4 @@ st.write(
         'selector': 'table',
         'props': [('width', '1700px')]
     }])
-)   
+)

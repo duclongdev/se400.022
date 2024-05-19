@@ -1,1 +1,6 @@
-# streamlit-demo-app
+# Log insight app
+
+Run source
+```
+streamlit run app.py
+```
