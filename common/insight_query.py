@@ -2,15 +2,16 @@ from pymongo import MongoClient
 from datetime import datetime
 import pandas as pd
 
-# Constant
-DATABASE_NAME = "my_app"
 
-def calc_user_device_percent(db_client):
+def calc_user_device_percent(client, start_date, end_date):
   # Get collection
-  collection_used_devices = db_client["used_devices"]
+  collection_used_devices = client["used_devices"]
 
   # Query pipeline
   pipeline = [
+    {'$match': {
+          'timestamp': {'$gte': start_date, '$lte': end_date},
+          'user_id': {'$ne': ''}}},
     {"$group": {"_id": "$device_type", "count": {"$sum": 1}}},
     {"$project": {"device_type": "$_id", "count": 1, "_id": 0}},
     {"$sort": {"count": -1}}
@@ -21,16 +22,11 @@ def calc_user_device_percent(db_client):
 
   return [labels, sizes]
 
-def total_user_activity(start_date, end_date):
+def total_user_activity(client, start_date, end_date):
   # Init MongoDB connection
-  client = MongoClient('localhost', 27017)
 
   # Get collection
-  collection_used_devices = client["logs"]["structure_logs"]
-
-  # Create start and end date
-  # start_date = datetime(2024, 1, 30, 18, 0, 0)
-  # end_date = datetime(2024, 3, 1, 10, 0, 0)
+  collection_used_devices = client["structure_logs"]
 
   # Query pipeline
   pipeline = [
@@ -55,71 +51,187 @@ def total_user_activity(start_date, end_date):
   return results_used_devices[0]["distinct_user_count"] if results_used_devices else 0
 
 def req_datetime_timeseries(client, start_datetime, end_datetime):
-  query = {
-    "timestamp": {
-        "$gte": start_datetime,
-        "$lte": end_datetime
+    query = {
+        "timestamp": {
+            "$gte": start_datetime,
+            "$lte": end_datetime
+        }
     }
-  }
 
-  timestamps = []
-  raw_logs_collection = client[DATABASE_NAME]["raw_logs"]
-  cursor_raw_logs   = raw_logs_collection.find(query)
-  for document in cursor_raw_logs:
-      timestamp = document["timestamp"]
-      timestamps.append(timestamp)
+    # Reference the collection
+    raw_logs_collection = client["raw_logs"]
 
+    # Define the aggregation pipeline
+    pipeline = [
+        {"$match": query},
+        {"$group": {
+            "_id": {
+                "$dateToString": {
+                    "format": "%Y-%m-%d",
+                    "date": "$timestamp"
+                }
+            },
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}},
+        {"$project": {
+            "Timestamp": "$_id",
+            "Number of Requests": "$count"
+        }}
+    ]
 
-  # date_range = pd.date_range(start=start_date, end=end_date)
-  data = pd.DataFrame({
-      'Timestamp': timestamps
-  })
+    # Execute the aggregation pipeline
+    result = raw_logs_collection.aggregate(pipeline)
 
-  # Nhóm theo ngày và đếm số lần request trong mỗi ngày
-  data = data.groupby(pd.Grouper(key='Timestamp', freq='D')).size().reset_index(name='Number of Requests')
-  return data
+    # Convert the result to a DataFrame
+    data = pd.DataFrame(list(result))
+    
+    return data
 
 def top_api_used(client, start_datetime, end_datetime):
-  api_counts = {}
-  query = {
-    "timestamp": {
-        "$gte": start_datetime,
-        "$lte": end_datetime
+    query = {
+        "timestamp": {
+            "$gte": start_datetime,
+            "$lte": end_datetime
+        }
     }
-  }
 
-  # Lặp qua kết quả cursor và đếm số lần gọi của mỗi API
-  structure_logs_collection = client[DATABASE_NAME]["structure_logs"]
+    # Reference the collection
+    structure_logs_collection = client["structure_logs"]
 
-  cursor_structures = structure_logs_collection.find(query)
+    # Define the aggregation pipeline
+    pipeline = [
+        {"$match": query},
+        {"$match": {"api_name": {"$exists": True}}},
+        {"$group": {"_id": "$api_name", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
 
-  for document in cursor_structures:
-      api_name = document["api_name"]
-      if api_name in api_counts:
-          api_counts[api_name] += 1
-      else:
-          api_counts[api_name] = 1
+    # Execute the aggregation pipeline
+    result = structure_logs_collection.aggregate(pipeline)
 
-  # Sắp xếp dictionary theo số lần gọi giảm dần
-  sorted_api_counts = sorted(api_counts.items(), key=lambda x: x[1], reverse=True)
+    # Convert the result to a list of tuples and then to a DataFrame
+    sorted_api_counts = [(doc["_id"], doc["count"]) for doc in result]
+    data = pd.DataFrame(sorted_api_counts, columns=["API name", "Num Of call"])
+    
+    return data
 
-  data = pd.DataFrame(sorted_api_counts, columns=["API name", "Num Of call"])
-  return data
+def req_insight(client, start_datetime, end_datetime):
+    query = {
+        "timestamp": {
+            "$gte": start_datetime,
+            "$lte": end_datetime
+        }
+    }
 
-def req_insight(data_raw_logs):
-  # Sắp xếp timestamps
-  data_raw_logs.sort(key=lambda x: x["timestamp"])
+    # Reference the collection
+    raw_logs_collection = client["raw_logs"]
 
-  # Tính khoảng thời gian giữa timestamp đầu tiên và timestamp cuối cùng
-  time_diff = data_raw_logs[len(data_raw_logs) - 1]["timestamp"] - data_raw_logs[0]["timestamp"]
+    # Define the aggregation pipeline
+    pipeline = [
+        {"$match": query},
+        {"$sort": {"timestamp": 1}},
+        {"$group": {
+            "_id": None,
+            "first_timestamp": {"$first": "$timestamp"},
+            "last_timestamp": {"$last": "$timestamp"},
+            "total_requests": {"$sum": 1}
+        }},
+        {"$project": {
+            "_id": 0,
+            "total_requests": 1,
+            "time_diff_seconds": {
+                "$divide": [
+                    {"$subtract": ["$last_timestamp", "$first_timestamp"]},
+                    1000
+                ]
+            }
+        }},
+        {"$project": {
+            "total_requests": 1,
+            "requests_per_second": {
+                "$cond": {
+                    "if": {"$eq": ["$time_diff_seconds", 0]},
+                    "then": 0,
+                    "else": {"$divide": ["$total_requests", "$time_diff_seconds"]}
+                }
+            }
+        }}
+    ]
 
-  # Số request
-  total_requests = len(data_raw_logs)
+    # Execute the aggregation pipeline
+    result = list(raw_logs_collection.aggregate(pipeline))
 
-  # Số giây trong khoảng thời gian
-  total_seconds = time_diff.total_seconds()
+    if not result:
+        return [0, 0.0]
 
-  # Tính số request mỗi giây
-  requests_per_second = total_requests / total_seconds
-  return [total_requests, round(requests_per_second, 5)]
-# print(total_user_activity(1, 2))
+    total_requests = result[0]["total_requests"]
+    requests_per_second = round(result[0]["requests_per_second"], 5)
+
+    return [total_requests, requests_per_second]
+  
+# def calculate_message_ratios(client, start_datetime, end_datetime):
+#     # Reference the collection
+#     collection_raw_logs = client["raw_logs"]
+    
+#     # Define the query to filter data by timestamp
+#     query = {
+#         "timestamp": {
+#             "$gte": start_datetime,
+#             "$lte": end_datetime
+#         }
+#     }
+    
+#     # Define the aggregation pipeline
+#     pipeline = [
+#         {"$match": query},
+#         {"$group": {
+#             "_id": "$message",
+#             "count": {"$sum": 1}
+#         }},
+#         {"$sort": {"count": -1}},
+#         {"$group": {
+#             "_id": None,
+#             "total_messages": {"$sum": "$count"},
+#             "messages": {"$push": {"message": "$_id", "count": "$count"}}
+#         }},
+#         {"$unwind": "$messages"},
+#         {"$project": {
+#             "_id": 0,
+#             "message": "$messages.message",
+#             "count": "$messages.count",
+#             "ratio": {"$divide": ["$messages.count", "$total_messages"]}
+#         }},
+#         {"$sort": {"count": -1}}
+#     ]
+    
+#     # Execute the aggregation pipeline with allowDiskUse=True
+#     result = list(collection_raw_logs.aggregate(pipeline, allowDiskUse=True))
+    
+#     # Return the result
+#     return result
+def process_aggregation_results(results):
+    message_counts = {}
+    for doc in results:
+        message = doc["_id"]
+        count = doc["count"]
+        message_counts[message] = count
+
+    sorted_messages = sorted(message_counts.items(), key=lambda x: x[1], reverse=True)
+    total_messages = sum(count for _, count in sorted_messages)
+    ratios = [{"message": message, "count": count, "ratio": count / total_messages} for message, count in sorted_messages]
+
+    return ratios
+
+def calculate_message_ratios(client, start_datetime, end_datetime):
+    # Part 1: Execute MongoDB aggregation pipeline
+    pipeline_part1 = [
+        {"$match": {"timestamp": {"$gte": start_datetime, "$lte": end_datetime}}},
+        {"$group": {"_id": "$message", "count": {"$sum": 1}}}
+    ]
+    results_part1 = list(client["raw_logs"].aggregate(pipeline_part1))
+
+    # Part 2: Process aggregation results using Python
+    ratios = process_aggregation_results(results_part1)
+
+    return ratios

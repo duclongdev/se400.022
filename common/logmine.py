@@ -60,5 +60,4 @@ def pattern_recognition(input):
   # Convert ansi2html
   return result
 
-print(pattern_recognition(arr))
 

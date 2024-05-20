@@ -54,7 +54,7 @@ cursor_anomaly_logs = collection_anomaly_logs.find(query)
 for document in cursor_anomaly_logs:
     arr.append(document)
 
-print(arr)
+
 
 data = pd.DataFrame(arr, columns=["timestamp", "message"])
 st.write(

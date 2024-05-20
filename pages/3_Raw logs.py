@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import sys
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-
+from common.db_connection import connect_to_db
 
 st.title("Raw logs page")
 
@@ -18,20 +19,20 @@ default_end_time = datetime.now().replace(hour=23, minute=59)
 start_date = datetime(2024, 1, 1)
 end_date = datetime(2024, 2, 25)
 
-uri = "mongodb+srv://ngduclong173:lRTTd7JxwBgEVO0W@cluster0.tva8uce.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+# uri = "mongodb+srv://ngduclong173:lRTTd7JxwBgEVO0W@cluster0.tva8uce.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
+# client = MongoClient(uri, server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection
+
 try:
-    client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
+    db = connect_to_db()
+    print(db)
 except Exception as e:
-    print(e)
-
-db = client["my_app"]
-collection_anomaly_logs = db["anomaly_logs"]
-
-
+    st.title("Failed connect with db")
+    sys.exit()
+    
+collection_anomaly_logs = db["raw_logs"]
+    
 
 st.write("### Input Date")
 col1, col2 = st.columns(2)
@@ -55,8 +56,6 @@ arr = []
 cursor_anomaly_logs = collection_anomaly_logs.find(query)
 for document in cursor_anomaly_logs:
     arr.append(document)
-
-print(arr)
 
 data = pd.DataFrame(arr, columns=["timestamp", "message"])
 st.write(

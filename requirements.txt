@@ -1,5 +1,6 @@
-matplotlib
-streamlit
-pandas
-pymongo
-pymongo[srv]
+auto_mix_prep==0.2.0
+matplotlib==3.8.4
+numpy==1.26.4
+pandas==2.2.2
+pymongo==4.7.1
+streamlit==1.34.0
