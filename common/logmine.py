@@ -1,4 +1,4 @@
-from logmine_pkg import log_mine
+from .logmine_pkg import log_mine
 import io
 from datetime import datetime
 from pymongo import MongoClient
@@ -27,20 +27,20 @@ lm = log_mine.LogMine(
 ) # pass the usual parameters
 lm.output.set_output_file(file=buffer)
 
-# Connect to MongoDB & Read the logs
-client = MongoClient('localhost', 27017)
-raw_logs_collection = client['logs']['raw_logs']
-query = {
-  "timestamp": {
-    "$gte": datetime.strptime('2024-01-31T17:00:00.000Z', "%Y-%m-%dT%H:%M:%S.%fZ"),
-    "$lte": datetime.strptime('2024-01-31T20:00:00.000Z', "%Y-%m-%dT%H:%M:%S.%fZ")
-  }
-}
+# # Connect to MongoDB & Read the logs
+# client = MongoClient('localhost', 27017)
+# raw_logs_collection = client['logs']['raw_logs']
+# query = {
+#   "timestamp": {
+#     "$gte": datetime.strptime('2024-01-31T17:00:00.000Z', "%Y-%m-%dT%H:%M:%S.%fZ"),
+#     "$lte": datetime.strptime('2024-01-31T20:00:00.000Z', "%Y-%m-%dT%H:%M:%S.%fZ")
+#   }
+# }
 
-arr = []
-cursor_anomaly_logs = raw_logs_collection.find(query)
-for document in cursor_anomaly_logs:
-  arr.append(document['message'])
+# arr = []
+# cursor_anomaly_logs = raw_logs_collection.find(query)
+# for document in cursor_anomaly_logs:
+#   arr.append(document['message'])
 
 # a = lm.run(files=None, data=arr)
 # print(buffer.getvalue())
@@ -55,10 +55,10 @@ def pattern_recognition(input):
   for item in result:
     count = item['count']
     percent = (count / total_lines) * 100
-    item['percent'] = percent
+    item['ratio'] = str(round(percent, 2))
 
   # Convert ansi2html
   return result
 
-print(pattern_recognition(arr))
+# print(pattern_recognition(arr))
 

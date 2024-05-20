@@ -101,42 +101,72 @@ col1.pyplot(fig)
 
 
 # Request insight
-total_requests, requests_per_second = req_insight(data_raw_logs)
-col2.write("#### Total requests")
-col2.write(f"# {total_requests}")
-col2.write("#### Requests per second")
-col2.write(f"# {requests_per_second}")
+# total_requests, requests_per_second = req_insight(data_raw_logs)
+# col2.write("#### Total requests")
+# col2.write(f"# {total_requests}")
+# col2.write("#### Requests per second")
+# col2.write(f"# {requests_per_second}")
 
 
-# Pattern recognition
+# # Pattern recognition
 st.write("#### Pattern recognition")
-cursor_raw_logs   = collection_raw_logs.find(query)
-message_counts = {}
-total_messages = 0
-for document in cursor_raw_logs:
-    message = document["message"]
-    if message in message_counts:
-        message_counts[message] += 1
-    else:
-        message_counts[message] = 1
-    total_messages += 1
+# cursor_raw_logs   = collection_raw_logs.find(query)
+# message_counts = {}
+# total_messages = 0
+# for document in cursor_raw_logs:
+#     message = document["message"]
+#     if message in message_counts:
+#         message_counts[message] += 1
+#     else:
+#         message_counts[message] = 1
+#     total_messages += 1
 
-message_ratios = {message: count / total_messages for message, count in message_counts.items()}
+# message_ratios = {message: count / total_messages for message, count in message_counts.items()}
 
-# Sắp xếp message_counts theo số lần xuất hiện giảm dần
-sorted_message_counts = sorted(message_counts.items(), key=lambda x: x[1], reverse=True)
+# # Sắp xếp message_counts theo số lần xuất hiện giảm dần
+# sorted_message_counts = sorted(message_counts.items(), key=lambda x: x[1], reverse=True)
 
-# Chuyển đổi dữ liệu thành DataFrame
-data = pd.DataFrame(sorted_message_counts, columns=["Message", "Count"])
+# # Chuyển đổi dữ liệu thành DataFrame
+# data = pd.DataFrame(sorted_message_counts, columns=["Message", "Count"])
 
-# Thêm cột Ratio vào DataFrame
-data["Ratio"] = data["Message"].apply(lambda x: message_ratios[x])
+# # Thêm cột Ratio vào DataFrame
+# data["Ratio"] = data["Message"].apply(lambda x: message_ratios[x])
 
-# Hiển thị top 10 messages
-top_10_data = data.head(10)
-st.write(
-    top_10_data.style.set_table_styles([{
-        'selector': 'table',
-        'props': [('width', '200px')]
-    }])
-)
+# # Hiển thị top 10 messages
+# top_10_data = data.head(10)
+# st.write(
+#     top_10_data.style.set_table_styles([{
+#         'selector': 'table',
+#         'props': [('width', '200px')]
+#     }])
+# )
+
+from common.logmine import pattern_recognition
+from pymongo import MongoClient
+# Connect to MongoDB & Read the logs
+client = MongoClient('localhost', 27017)
+raw_logs_collection = client['logs']['raw_logs']
+
+arr = []
+cursor_r_logs = raw_logs_collection.find(query)
+for document in cursor_r_logs:
+  arr.append(document['message'])
+
+result = pattern_recognition(arr)
+print(result)
+# Convert df
+df = pd.DataFrame(result)
+st.table(df)
+# top_10_data = df.head(10)
+# st.write(
+#     top_10_data.style.set_table_styles([{
+#         'selector': 'table',
+#         'props': [('width', '200px')]
+#     }])
+# )
+
+# print(len(arr))
+# # Print 10 logs
+# print(arr[:10])
+# # print(data_raw_logs)
+# print(pattern_recognition(arr))

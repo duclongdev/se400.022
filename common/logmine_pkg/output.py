@@ -74,7 +74,7 @@ class Output():
                     output.append(field)
 
             formatted_string = '%s' % (' '.join(str(_) for _ in output))
-            out.append({ "count": count, "pattern": formatted_string })
+            out.append({ "pattern": formatted_string, "count": count })
             log("Output: start print -----------------------------------")
             # print('%s %s' % (str(count).rjust(width), ' '.join(str(_) for _ in output)), file=self.output_file)
         return out
