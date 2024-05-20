@@ -167,6 +167,9 @@ def top_api_used(client, start_datetime, end_datetime):
         "timestamp": {
             "$gte": start_datetime,
             "$lte": end_datetime
+        },
+        "api_name" : {
+            '$ne' : ''
         }
     }
 

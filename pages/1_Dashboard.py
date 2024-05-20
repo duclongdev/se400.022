@@ -12,7 +12,6 @@ st.sidebar.write("### Navigation")
 # Init MongoDB connection
 try:
     db = connect_to_db(True)
-    print(db)
 except Exception as e:
     st.title("Failed connect with db")
     sys.exit()
@@ -63,8 +62,6 @@ col3.write(
 
 col1, col2 = st.columns([6, 4], gap="medium")
 data = req_datetime_timeseries(db, start_datetime, end_datetime)
-
-print(data)
 
 col1.write("#### Time series")
 fig, ax = plt.subplots()
