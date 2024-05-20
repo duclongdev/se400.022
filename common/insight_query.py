@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 
 
@@ -50,42 +50,116 @@ def total_user_activity(client, start_date, end_date):
   results_used_devices = list(collection_used_devices.aggregate(pipeline))
   return results_used_devices[0]["distinct_user_count"] if results_used_devices else 0
 
-def req_datetime_timeseries(client, start_datetime, end_datetime):
-    query = {
-        "timestamp": {
-            "$gte": start_datetime,
-            "$lte": end_datetime
-        }
-    }
+# def req_datetime_timeseries(client, start_datetime, end_datetime):
+#     interval = (end_datetime - start_datetime) / 12
+#     segment_start = start_datetime + 1 * interval
+#     segment_end = segment_start + interval
+#     query = {
+#         "timestamp": {
+#             "$gte": segment_start,
+#             "$lte": segment_end
+#         }
+#     }
 
-    # Reference the collection
+#     # Reference the collection
+#     raw_logs_collection = client["raw_logs"]
+
+#     # Define the aggregation pipeline
+#     pipeline = [
+#         {"$match": query},
+#         {"$group": {
+#             "_id": {
+#                 "$dateToString": {
+#                     "format": "%Y-%m-%d",
+#                     "date": "$timestamp"
+#                 }
+#             },
+#             "count": {"$sum": 1}
+#         }},
+#         {"$sort": {"_id": 1}},
+#         {"$project": {
+#             "Timestamp": "$_id",
+#             "Number of Requests": "$count"
+#         }}
+#     ]
+
+#     # Execute the aggregation pipeline
+#     result = raw_logs_collection.aggregate(pipeline)
+
+#     # Convert the result to a DataFrame
+#     data = pd.DataFrame(list(result))
+    
+#     return data
+
+def req_datetime_timeseries(client, start_datetime, end_datetime):
+    # Calculate the interval duration in seconds
+    total_seconds = (end_datetime - start_datetime).total_seconds()
+    interval_duration = total_seconds / 12
+
+    # Define the collection
     raw_logs_collection = client["raw_logs"]
 
     # Define the aggregation pipeline
     pipeline = [
-        {"$match": query},
-        {"$group": {
-            "_id": {
+        {"$match": {
+            "timestamp": {"$gte": start_datetime, "$lte": end_datetime}
+        }},
+        {"$bucket": {
+            "groupBy": {"$subtract": [
+                {"$toLong": "$timestamp"},
+                {"$mod": [{"$toLong": "$timestamp"}, interval_duration * 1000]}
+            ]},
+            "boundaries": [
+                start_datetime.timestamp() * 1000 + i * interval_duration * 1000
+                for i in range(13)
+            ],
+            "default": "Other",
+            "output": {
+                "count": {"$sum": 1},
+                "timestamp": {"$first": "$timestamp"}
+            }
+        }},
+        {"$project": {
+            "_id": 0,
+            "Timestamp": {
                 "$dateToString": {
-                    "format": "%Y-%m-%d",
+                    "format": "%Y-%m-%d %H:%M:%S",
                     "date": "$timestamp"
                 }
             },
-            "count": {"$sum": 1}
-        }},
-        {"$sort": {"_id": 1}},
-        {"$project": {
-            "Timestamp": "$_id",
             "Number of Requests": "$count"
-        }}
+        }},
+        {"$sort": {"Timestamp": 1}}
     ]
 
     # Execute the aggregation pipeline
-    result = raw_logs_collection.aggregate(pipeline)
+    result = list(raw_logs_collection.aggregate(pipeline))
 
     # Convert the result to a DataFrame
-    data = pd.DataFrame(list(result))
-    
+    if result:
+        data = pd.DataFrame(result)
+    else:
+        data = pd.DataFrame(columns=["Timestamp", "Number of Requests"])
+
+    # Fill in missing intervals
+    if len(data) < 12:
+        time_ranges = [
+            start_datetime + timedelta(seconds=i * interval_duration)
+            for i in range(13)
+        ]
+        filled_data = pd.DataFrame({
+            "Timestamp": [
+                (start_datetime + timedelta(seconds=i * interval_duration)).strftime("%Y-%m-%d %H:%M:%S")
+                for i in range(12)
+            ],
+            "Number of Requests": 0
+        })
+        for i, row in data.iterrows():
+            idx = min(range(12), key=lambda j: abs(datetime.strptime(row["Timestamp"], "%Y-%m-%d %H:%M:%S") - time_ranges[j]))
+            filled_data.at[idx, "Number of Requests"] = row["Number of Requests"]
+
+        data = filled_data
+
     return data
 
 def top_api_used(client, start_datetime, end_datetime):

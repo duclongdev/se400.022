@@ -64,7 +64,8 @@ col3.write(
 col1, col2 = st.columns([6, 4], gap="medium")
 data = req_datetime_timeseries(db, start_datetime, end_datetime)
 
-# Hiển thị biểu đồ time series
+print(data)
+
 col1.write("#### Time series")
 fig, ax = plt.subplots()
 ax.plot(data['Timestamp'], data['Number of Requests'])
