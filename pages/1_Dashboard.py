@@ -5,7 +5,11 @@ import sys
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from common.db_connection import connect_to_db
+from common.checkpassword import check_password
 from common.insight_query import calc_user_device_percent, total_user_activity, req_datetime_timeseries,calculate_message_ratios, top_api_used, req_insight
+
+if not check_password():
+    st.stop()
 
 st.sidebar.write("### Navigation")
 
@@ -69,6 +73,7 @@ ax.plot(data['Timestamp'], data['Number of Requests'])
 ax.set_xlabel('Date')
 ax.set_ylabel('Number of Requests')
 ax.set_title('Time Series Plot')
+ax.grid(True)
 plt.xticks(rotation=45)
 plt.tight_layout()
 col1.pyplot(fig)
@@ -87,9 +92,4 @@ st.write("#### Pattern recognition")
 data = calculate_message_ratios(db, start_datetime, end_datetime)
 data_frame = pd.DataFrame(data, columns=["message", "count", "ratio"])
 top_10_data = data_frame.head(10)
-st.write(
-    top_10_data.style.set_table_styles([{
-        'selector': 'table',
-        'props': [('width', '200px')]
-    }])
-)
+st.table(top_10_data)
