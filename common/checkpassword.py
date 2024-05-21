@@ -35,7 +35,3 @@ def check_password():
     if "password_correct" in st.session_state:
         st.error("😕 User not known or password incorrect")
     return False
-
-
-if not check_password():
-    st.stop()
