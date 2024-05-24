@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 from datetime import datetime, timedelta
+from common.logmine import pattern_recognition
 import pandas as pd
 
 
@@ -49,47 +50,6 @@ def total_user_activity(client, start_date, end_date):
 
   results_used_devices = list(collection_used_devices.aggregate(pipeline))
   return results_used_devices[0]["distinct_user_count"] if results_used_devices else 0
-
-# def req_datetime_timeseries(client, start_datetime, end_datetime):
-#     interval = (end_datetime - start_datetime) / 12
-#     segment_start = start_datetime + 1 * interval
-#     segment_end = segment_start + interval
-#     query = {
-#         "timestamp": {
-#             "$gte": segment_start,
-#             "$lte": segment_end
-#         }
-#     }
-
-#     # Reference the collection
-#     raw_logs_collection = client["raw_logs"]
-
-#     # Define the aggregation pipeline
-#     pipeline = [
-#         {"$match": query},
-#         {"$group": {
-#             "_id": {
-#                 "$dateToString": {
-#                     "format": "%Y-%m-%d",
-#                     "date": "$timestamp"
-#                 }
-#             },
-#             "count": {"$sum": 1}
-#         }},
-#         {"$sort": {"_id": 1}},
-#         {"$project": {
-#             "Timestamp": "$_id",
-#             "Number of Requests": "$count"
-#         }}
-#     ]
-
-#     # Execute the aggregation pipeline
-#     result = raw_logs_collection.aggregate(pipeline)
-
-#     # Convert the result to a DataFrame
-#     data = pd.DataFrame(list(result))
-    
-#     return data
 
 def req_datetime_timeseries(client, start_datetime, end_datetime):
     # Calculate the interval duration in seconds
@@ -190,7 +150,7 @@ def top_api_used(client, start_datetime, end_datetime):
     # Convert the result to a list of tuples and then to a DataFrame
     sorted_api_counts = [(doc["_id"], doc["count"]) for doc in result]
     data = pd.DataFrame(sorted_api_counts, columns=["API name", "Num Of call"])
-    
+
     return data
 
 def req_insight(client, start_datetime, end_datetime):
@@ -246,7 +206,7 @@ def req_insight(client, start_datetime, end_datetime):
     requests_per_second = round(result[0]["requests_per_second"], 5)
 
     return [total_requests, requests_per_second]
-  
+
 # def calculate_message_ratios(client, start_datetime, end_datetime):
 #     # Reference the collection
 #     collection_raw_logs = client["raw_logs"]
@@ -312,3 +272,28 @@ def calculate_message_ratios(client, start_datetime, end_datetime):
     ratios = process_aggregation_results(results_part1)
 
     return ratios
+
+def log_patttern_recognition(client, start_datetime, end_datetime):
+  pipeline = [
+    {
+      '$match': {
+          'timestamp': {
+            '$gte': start_datetime,
+            '$lte': end_datetime
+          },
+      }
+    },
+    {
+      '$project': {
+          '_id': 0,
+          'message': 1
+      }
+    },
+  ]
+
+  raw_logs_data = list(client['raw_logs'].aggregate(pipeline))
+  log_messsages = [log['message'] for log in raw_logs_data]
+
+  # Logmine machine
+  result = pattern_recognition(log_messsages)
+  return result
