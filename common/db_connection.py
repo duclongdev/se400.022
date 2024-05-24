@@ -32,7 +32,7 @@ def connect_to_db(cloud=False):
     # Create a new client and connect to the server
     if cloud:
       client = MongoClient(uri, server_api=ServerApi('1'))
-    else: 
+    else:
       client = MongoClient(uri)
 
     # Send a ping to confirm a successful connection
