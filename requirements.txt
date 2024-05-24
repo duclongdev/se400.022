@@ -3,3 +3,4 @@ streamlit
 pandas
 pymongo
 pymongo[srv]
+ansi2html
