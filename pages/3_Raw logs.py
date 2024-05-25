@@ -18,7 +18,7 @@ try:
 except Exception as e:
     st.title("Failed connect with db")
     sys.exit()
-    
+
 collection_anomaly_logs = db["raw_logs"]
 default_start_date = datetime(2024, 2, 1)
 default_start_time = datetime(2024, 2, 1).replace(hour=0, minute=0)

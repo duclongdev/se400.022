@@ -6,12 +6,10 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from common.db_connection import connect_to_db
 from common.checkpassword import check_password
-from common.insight_query import calc_user_device_percent, total_user_activity, req_datetime_timeseries,calculate_message_ratios, top_api_used, req_insight, log_patttern_recognition
+from common.insight_query import calc_user_device_percent, total_user_activity, req_datetime_timeseries, top_api_used, req_insight, log_patttern_recognition
 
 if not check_password():
     st.stop()
-
-st.sidebar.write("### Navigation")
 
 # Init MongoDB connection
 try:
@@ -94,8 +92,3 @@ df = pd.DataFrame(data1)
 html = df.to_html(escape=False)
 st.write(html, unsafe_allow_html=True)
 st.write('<style type="text/css">.ansi33 { color: #ff0000; }</style', unsafe_allow_html=True)
-
-# data = calculate_message_ratios(db, start_datetime, end_datetime)
-# data_frame = pd.DataFrame(data, columns=["message", "count", "ratio"])
-# top_10_data = data_frame.head(10)
-# st.table(top_10_data)
