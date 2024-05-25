@@ -15,6 +15,12 @@ def main():
     st.header("Thông tin về Ứng dụng")
     st.write("Ứng dụng của chúng tôi được thiết kế để phân tích các log không bình thường và cung cấp thông tin hữu ích để giải quyết vấn đề. Dù bạn là quản trị viên hệ thống, nhà phân tích dữ liệu hoặc nhà phát triển, ứng dụng của chúng tôi đều giúp bạn nắm bắt và giải quyết các vấn đề một cách nhanh chóng và hiệu quả.")
 
+    st.header("Architecture")
+    st.write("#### Overview")
+    st.image("./public/architecture.png", use_column_width=True, caption="Architecture Diagram")
+    st.write("#### LogMine Pattern Cluster")
+    st.image("./public/logmine-pattern-cluster.png", use_column_width=True, caption="LogMine Pattern Cluster Diagram")
+
     st.header("Cách Sử Dụng")
     st.write("Sử dụng ứng dụng của chúng tôi đơn giản và trực quan:")
     st.write("1. **Đăng nhập**: Để bắt đầu, chỉ cần đăng nhập bằng tên người dùng và mật khẩu của bạn.")

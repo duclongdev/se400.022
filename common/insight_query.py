@@ -207,46 +207,6 @@ def req_insight(client, start_datetime, end_datetime):
 
     return [total_requests, requests_per_second]
 
-# def calculate_message_ratios(client, start_datetime, end_datetime):
-#     # Reference the collection
-#     collection_raw_logs = client["raw_logs"]
-    
-#     # Define the query to filter data by timestamp
-#     query = {
-#         "timestamp": {
-#             "$gte": start_datetime,
-#             "$lte": end_datetime
-#         }
-#     }
-    
-#     # Define the aggregation pipeline
-#     pipeline = [
-#         {"$match": query},
-#         {"$group": {
-#             "_id": "$message",
-#             "count": {"$sum": 1}
-#         }},
-#         {"$sort": {"count": -1}},
-#         {"$group": {
-#             "_id": None,
-#             "total_messages": {"$sum": "$count"},
-#             "messages": {"$push": {"message": "$_id", "count": "$count"}}
-#         }},
-#         {"$unwind": "$messages"},
-#         {"$project": {
-#             "_id": 0,
-#             "message": "$messages.message",
-#             "count": "$messages.count",
-#             "ratio": {"$divide": ["$messages.count", "$total_messages"]}
-#         }},
-#         {"$sort": {"count": -1}}
-#     ]
-    
-#     # Execute the aggregation pipeline with allowDiskUse=True
-#     result = list(collection_raw_logs.aggregate(pipeline, allowDiskUse=True))
-    
-#     # Return the result
-#     return result
 def process_aggregation_results(results):
     message_counts = {}
     for doc in results:
