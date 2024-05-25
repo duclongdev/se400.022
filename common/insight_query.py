@@ -126,7 +126,6 @@ def req_datetime_timeseries(client, start_datetime, end_datetime):
             filled_data.at[idx, "Number of Requests"] = row["Number of Requests"] 
             
         data = filled_data[filled_data['Number of Requests'] != 0]
-        print(data)
     return data
 
 def top_api_used(client, start_datetime, end_datetime):
