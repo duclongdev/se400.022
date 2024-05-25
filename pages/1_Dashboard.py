@@ -4,6 +4,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+import matplotlib.dates as mdates
 from common.db_connection import connect_to_db
 from common.checkpassword import check_password
 from common.insight_query import calc_user_device_percent, total_user_activity, req_datetime_timeseries, top_api_used, req_insight, log_patttern_recognition
@@ -75,7 +76,8 @@ ax.set_xlabel('Date')
 ax.set_ylabel('Number of Requests')
 ax.set_title('Time Series Plot')
 ax.grid(True)
-plt.xticks(rotation=45)
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
+plt.xticks(rotation=75)
 plt.tight_layout()
 col1.pyplot(fig)
 
