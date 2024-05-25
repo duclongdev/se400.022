@@ -28,7 +28,6 @@ LOCAL_URI = "mongodb://localhost:27017/"
 def connect_to_db(cloud=False):
     # Determine URI based on the parameter
     uri = CLOUD_URI if cloud else LOCAL_URI
-    print(uri)
     # Create a new client and connect to the server
     if cloud:
       client = MongoClient(uri, server_api=ServerApi('1'))

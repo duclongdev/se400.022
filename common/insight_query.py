@@ -98,6 +98,9 @@ def req_datetime_timeseries(client, start_datetime, end_datetime):
     # Convert the result to a DataFrame
     if result:
         data = pd.DataFrame(result)
+        data["Timestamp"] = pd.to_datetime(data["Timestamp"])
+        data["Adjusted Timestamp"] = data["Timestamp"] + timedelta(hours=7)
+        data["Timestamp"] = data["Timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
     else:
         data = pd.DataFrame(columns=["Timestamp", "Number of Requests"])
 
@@ -112,14 +115,18 @@ def req_datetime_timeseries(client, start_datetime, end_datetime):
                 (start_datetime + timedelta(seconds=i * interval_duration)).strftime("%Y-%m-%d %H:%M:%S")
                 for i in range(12)
             ],
+            "Adjusted Timestamp": [
+                (start_datetime + timedelta(seconds=i * interval_duration) + timedelta(hours=7)).strftime("%Y-%m-%d %H:%M:%S")
+                for i in range(12)
+            ],
             "Number of Requests": 0
         })
         for i, row in data.iterrows():
             idx = min(range(12), key=lambda j: abs(datetime.strptime(row["Timestamp"], "%Y-%m-%d %H:%M:%S") - time_ranges[j]))
-            filled_data.at[idx, "Number of Requests"] = row["Number of Requests"]
-
-        data = filled_data
-
+            filled_data.at[idx, "Number of Requests"] = row["Number of Requests"] 
+            
+        data = filled_data[filled_data['Number of Requests'] != 0]
+        print(data)
     return data
 
 def top_api_used(client, start_datetime, end_datetime):
@@ -207,46 +214,6 @@ def req_insight(client, start_datetime, end_datetime):
 
     return [total_requests, requests_per_second]
 
-# def calculate_message_ratios(client, start_datetime, end_datetime):
-#     # Reference the collection
-#     collection_raw_logs = client["raw_logs"]
-    
-#     # Define the query to filter data by timestamp
-#     query = {
-#         "timestamp": {
-#             "$gte": start_datetime,
-#             "$lte": end_datetime
-#         }
-#     }
-    
-#     # Define the aggregation pipeline
-#     pipeline = [
-#         {"$match": query},
-#         {"$group": {
-#             "_id": "$message",
-#             "count": {"$sum": 1}
-#         }},
-#         {"$sort": {"count": -1}},
-#         {"$group": {
-#             "_id": None,
-#             "total_messages": {"$sum": "$count"},
-#             "messages": {"$push": {"message": "$_id", "count": "$count"}}
-#         }},
-#         {"$unwind": "$messages"},
-#         {"$project": {
-#             "_id": 0,
-#             "message": "$messages.message",
-#             "count": "$messages.count",
-#             "ratio": {"$divide": ["$messages.count", "$total_messages"]}
-#         }},
-#         {"$sort": {"count": -1}}
-#     ]
-    
-#     # Execute the aggregation pipeline with allowDiskUse=True
-#     result = list(collection_raw_logs.aggregate(pipeline, allowDiskUse=True))
-    
-#     # Return the result
-#     return result
 def process_aggregation_results(results):
     message_counts = {}
     for doc in results:

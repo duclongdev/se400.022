@@ -32,11 +32,12 @@ col1, col2 = st.columns(2)
 start_date = col1.date_input('Start Date', value=default_start_date)
 start_time = col2.time_input('Start Time', value=default_start_time)
 end_date   = col1.date_input('End Date', value=default_end_date)
-loan_term  = col2.time_input('End Time', value=default_end_time)
+loan_term  = col2.time_input('End Time', value=default_end_time) 
 
-start_datetime = datetime.combine(start_date, start_time)
-end_datetime = datetime.combine(end_date, loan_term)
+start_datetime = datetime.combine(start_date, start_time) - timedelta(hours=7)
+end_datetime = datetime.combine(end_date, loan_term) - timedelta(hours=7)
 
+print(start_datetime)
 # Tỉ lệ người dùng trên các loại thiết bị
 col1, col2, col3 = st.columns([5, 5, 4], gap="medium")
 labels, sizes = calc_user_device_percent(db, start_datetime, end_datetime)
@@ -66,10 +67,9 @@ col3.write(
 
 col1, col2 = st.columns([6, 4], gap="medium")
 data = req_datetime_timeseries(db, start_datetime, end_datetime)
-
 col1.write("#### Time series")
 fig, ax = plt.subplots()
-ax.plot(data['Timestamp'], data['Number of Requests'])
+ax.plot(data['Adjusted Timestamp'], data['Number of Requests'])
 ax.set_xlabel('Date')
 ax.set_ylabel('Number of Requests')
 ax.set_title('Time Series Plot')

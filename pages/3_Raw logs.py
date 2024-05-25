@@ -32,8 +32,8 @@ start_time = col2.time_input('Start Time', value=default_start_time)
 end_date   = col1.date_input('End Date', value=default_end_date)
 loan_term  = col2.time_input('End Time', value=default_end_time)
 
-start_datetime = datetime.combine(start_date, start_time)
-end_datetime = datetime.combine(end_date, loan_term)
+start_datetime = datetime.combine(start_date, start_time) - timedelta(hours=7)
+end_datetime = datetime.combine(end_date, loan_term) - timedelta(hours=7)
 
 query = {
     "timestamp": {
@@ -45,6 +45,10 @@ query = {
 # Lazy loading configuration
 batch_size = 100  # Number of records to load at a time
 additional_data = collection_anomaly_logs.find(query).limit(batch_size)
-df = pd.DataFrame(additional_data, columns=["timestamp", "message"])
-st.table(df)
+data = pd.DataFrame(additional_data, columns=["timestamp", "message"])
+data["timestamp"] = pd.to_datetime(data["timestamp"])
+
+# Add 7 hours to the "timestamp" column
+data["timestamp"] = data["timestamp"] + timedelta(hours=7)
+st.table(data)
  
